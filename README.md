@@ -42,8 +42,11 @@ Avatar powers will allow you to upgrade your attributes.
 ## Architecture
 ### Contracts
 ./contracts/Nefturians.sol -> Nefturians ERC721 contract
+
 ./contracts/ERC721A.sol -> Azuki ERC721 modified implementation
+
 ./contracts/NefturiansArtifact.sol -> Artifact ERC1155 contract
+
 ./contracts/NefturiansData.sol -> On chain metadata management
 
 ### Dependencies
@@ -51,7 +54,9 @@ Avatar powers will allow you to upgrade your attributes.
 
 ### Libraries
 ./libraries/ECDSALibrary.sol
+
 ./libraries/MerkleProofLibrary.sol
+
 ./libraries/MerkleProofLibrary.sol
 
 ## Deployment
