@@ -73,6 +73,11 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
 
   /**
    * Updated the odds of drawing artifacts based on their rarity level
+   * @param newOdds: new odds in increment order with last equal to 100000
+   *
+   * Error messages:
+   *  - AC0: "You dont have required role"
+   *  - NA03: "Wrong format for array"
    */
   function updateOdds(uint256[] calldata newOdds)
   public
@@ -88,9 +93,19 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     odds = newOdds;
   }
 
+  /**
+   * Adds a new artifact
+   * @param rarity: rarity of the new artifact (must be between 0 and 3)
+   * @param quantity: quantity of artifacts to be added
+   * @param isConsumable: if the artifact can be consumed
+   *
+   * Error messages:
+   *  - NA07: "Rarity out of bounds"
+   */
   function addRareItem(uint256 rarity, uint256 quantity, bool isConsumable)
   public
   {
+    require(rarity < 4 && rarity >= 0, "NA07");
     require(nefturians.hasRole(MINTER_ROLE, msg.sender), "Missing role");
     for (uint256 i = 0; i < quantity; i++) {
       indexesByRarity[rarity][countByRarity[rarity] + i] = generalCount + i;
@@ -98,15 +113,29 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     }
     countByRarity[rarity] += quantity;
     generalCount += quantity;
+    emit AddRareItem(rarity, quantity, isConsumable);
   }
 
+  /**
+   * sets URI of givent token
+   * @param tokenId: id of the token
+   * @param newuri: new uri of token id
+   *
+   */
   function setURI(uint256 tokenId, string memory newuri) public {
     require(nefturians.hasRole(MINTER_ROLE, msg.sender), "Missing role");
     _setURI(tokenId, newuri);
   }
 
-  // mint avec signature
-  // IMPORTANT: est ce qu'on garde l'argument 'data' ? pour donner le tokenId a l'event ?
+  /**
+   * Public mint function that requires a signature from a SIGNER_ROLE
+   * @param tokenId: id of the token
+   * @param quantity: quantity to be minted
+   * @param signature: signature of SIGNER_ROLE
+   *
+   * Error messages:
+   *  - N6: "This operation has not been signed"
+   */
   function mintWithSignature(uint256 tokenId, uint256 quantity, bytes calldata signature)
   public
   {
@@ -116,7 +145,16 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     _mint(msg.sender, tokenId, quantity, "");
   }
 
-  // IMPORTANT: est ce qu'on garde l'argument 'data' ?
+  /**
+   * Mint batch of token only if MINTER_ROLE
+   * @param to: address reveiving tokens
+   * @param tokenIds: ids of the tokens to be minted
+   * @param amounts: quantities of each token to be minted
+   * @param data: arbitrary data for events
+   *
+   * Error messages:
+   *  - AC0: "You dont have required role"
+   */
   function mintBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts, bytes memory data)
   public
   {
@@ -124,14 +162,24 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     _mintBatch(to, tokenIds, amounts, data);
   }
 
+  /**
+   * Get the uri of a tokenId
+   * @param tokenId: id of the token
+   */
   function uri(uint256 tokenId) public view virtual override returns (string memory) {
     return _uris[tokenId];
   }
 
+  /**
+   * Stake some eth to allow the admin to claim artifacts for you
+   */
   function stake() public payable {
     stakes[msg.sender] += msg.value;
   }
 
+  /**
+   * Get your staked eth back
+   */
   function unstake() public {
     require(stakes[msg.sender] > 0, "No stake");
     uint256 staked = stakes[msg.sender];
@@ -139,8 +187,95 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     payable(msg.sender).transfer(staked);
   }
 
-  function giveTickets(address ticketAddress) override external onlyOwner {
-    _mint(ticketAddress, 0, 1, "");
+  /**
+   * Allows the parent contract (owner) to mint tickets to address
+   * @param to: address of the token recipient
+   */
+  function giveTickets(address to) override external onlyOwner {
+    _mint(to, 0, 1, "");
+  }
+
+  /**
+   * Claim artifacts with a ticket for a user. One ticket gives one random artifact of a random rarity level
+   * @param quantity: quantity of tickets to use
+   * @param userSeed: random seed from the user
+   * @param serverSeed: random seed from the server
+   * @param signature: the user seed signed with the token owner's private key
+   *
+   * Error messages:
+   *  - AC0: "You dont have required role"
+   *  - NA00: "Your stake does not cover the gas price"
+   *  - NA01: "Division by zero"
+   *  - NA08: "Balance too low"
+   */
+  function claimArtifact(
+    uint256 quantity,
+    bytes4 userSeed,
+    bytes4 serverSeed,
+    bytes calldata signature
+  ) public {
+    require(nefturians.hasRole(SIGNER_ROLE, msg.sender), "AC0");
+    address caller = ECDSALibrary.recover(abi.encodePacked(userSeed), signature);
+    require(balanceOf(caller, 0) >= quantity, "NA00");
+    require(stakes[caller] >= tx.gasprice, "NA01");
+    _burn(caller, 0, quantity);
+    uint256[] memory numbers = new uint256[](quantity);
+    for (uint256 i = 0; i < quantity; i++) {
+      uint256 number = uint256(keccak256(abi.encodePacked(userSeed, serverSeed, i)));
+      distributeReward(caller, number);
+    }
+    stakes[caller] -= tx.gasprice;
+    require(address(this).balance > tx.gasprice, "NA08");
+    payable(msg.sender).transfer(tx.gasprice);
+  }
+
+  /**
+   * mint reward based on odds and ticket number
+   * @param rewardee: address of receiver
+   * @param ticket: random number
+   *
+   * Error messages:
+   *  - NA02: "Division by zero"
+   */
+  function distributeReward(address rewardee, uint256 ticket) internal {
+    uint256 number = ticket % 100000;
+    uint256 rarity;
+
+    if (number < odds[0]) {
+      rarity = 0;
+    }
+    else if (number < odds[1]) {
+      rarity = 1;
+    }
+    else if (number < odds[2]) {
+      rarity = 2;
+    }
+    else {
+      rarity = 3;
+    }
+
+    uint256 index = ticket % countByRarity[rarity];
+    _mint(rewardee, indexesByRarity[rarity][index], 1, "");
+  }
+
+  /**
+   * Allow an owner of consumable tokens to use them
+   * @param tokenId: id of the token to be used
+   * @param quantity: quantity to be used
+   *
+   * Error messages:
+   *  - NA06: "Item not consummable"
+   *  - NA04: "Not enough artifacts"
+   */
+  function useArtifact(uint256 tokenId, uint256 quantity) public {
+    require(consumable[tokenId], "NA06");
+    require(balanceOf(msg.sender, tokenId) >= quantity, "NA04");
+    _burn(msg.sender, tokenId, quantity);
+    emit UseArtifact(tokenId, quantity);
+  }
+
+  function _setURI(uint256 tokenId, string memory newuri) internal {
+    _uris[tokenId] = newuri;
   }
 
   function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
@@ -148,66 +283,6 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
   override(ERC1155, ERC1155Supply)
   {
     super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
-  }
-
-  function _setURI(uint256 tokenId, string memory newuri) internal {
-    _uris[tokenId] = newuri;
-  }
-
-  function claimArtifact(
-    uint256 quantity,
-    bytes4 userSeed,
-    bytes4 serverSeed,
-    bytes calldata signature
-  ) public {
-    require(nefturians.hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "AC0"); // IMPORTANT: est ce qu'on ferait pas un SIGNER_ROLE (API) ?
-    address caller = ECDSALibrary.recover(abi.encodePacked(userSeed), signature);
-    require(balanceOf(caller, 0) >= quantity, "NA00");
-    require(stakes[caller] >= tx.gasprice, "NA01");
-    _burn(caller, 0, quantity);
-    uint256[] memory numbers = new uint256[](quantity);
-    for (uint256 i = 0; i < quantity; i++) {
-      uint256 salt = (i == 0) ? i : numbers[i - 1];
-      numbers[i] = uint256(keccak256(abi.encodePacked(userSeed, serverSeed, salt)));
-    }
-    for (uint256 i = 0; i < quantity; i++) {
-      distributeReward(caller, numbers[i]);
-    }
-    stakes[caller] -= tx.gasprice;
-    require(address(this).balance > tx.gasprice, "balance too low");
-    payable(msg.sender).transfer(tx.gasprice);
-  }
-
-  function distributeReward(address rewardee, uint256 ticket) internal {
-    uint256 number = ticket % 100000;
-
-    if (number < odds[0]) {
-      require(countByRarity[0] != 0, "NA02");
-      uint256 index = ticket % countByRarity[0];
-      _mint(rewardee, indexesByRarity[0][index], 1, "");
-    }
-    else if (number < odds[1]) {
-      require(countByRarity[1] != 0, "NA02");
-      uint256 index = ticket % countByRarity[1];
-      _mint(rewardee, indexesByRarity[1][index], 1, "");
-    }
-    else if (number < odds[2]) {
-      require(countByRarity[2] != 0, "NA02");
-      uint256 index = ticket % countByRarity[2];
-      _mint(rewardee, indexesByRarity[2][index], 1, "");
-    }
-    else {
-      require(countByRarity[3] != 0, "NA02");
-      uint256 index = ticket % countByRarity[3];
-      _mint(rewardee, indexesByRarity[3][index], 1, "");
-    }
-  }
-
-  function useArtifact(uint256 tokenId, uint256 quantity) public {
-    require(consumable[tokenId], "NA06");
-    require(balanceOf(msg.sender, tokenId) >= quantity, "NA04");
-    _burn(msg.sender, tokenId, quantity);
-    emit UseArtifact(tokenId, quantity);
   }
 
   // The following functions are overrides required by Solidity.
