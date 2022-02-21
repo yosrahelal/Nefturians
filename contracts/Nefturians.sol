@@ -155,6 +155,15 @@ contract Nefturians is ERC721A, AccessControl, Pausable, INefturians {
     shares[0xa0Ee7A142d267C1f36714E4a8F75612F20a79720] = 10;
   }
 
+  /** 
+   * Update NefturiansArtifact contract
+   * @param newNefturiansArtifact: address of new NefturiansArtifact contract
+   *
+   */
+  function setNefturiansArtifact(address newNefturiansArtifact) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    nefturiansArtifacts = INefturianArtifact(newNefturiansArtifact);
+  }
+
   /**
    * Get the pinting price
    */

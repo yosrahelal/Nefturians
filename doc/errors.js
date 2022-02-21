@@ -47,5 +47,7 @@ module.exports = {
   'Wrong format for array': 'NA03',
   'Not enough artifacts': 'NA04',
   'Array length do not match': 'NA05',
-  'Item not consummable': 'NA06'
+  'Item not consummable': 'NA06',
+  'Rarity out of bounds': 'NA07',
+  'Balance too low': 'NA08'
 };

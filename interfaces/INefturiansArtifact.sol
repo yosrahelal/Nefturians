@@ -10,5 +10,7 @@ interface INefturianArtifact is IERC1155 {
 
   event UpdateOdds(uint256[] oldOdds, uint256[] newOdds);
 
+  event AddRareItem(uint256 rarity, uint256 quantity, bool isConsumable);
+
   function giveTickets(address ticketAddress) external;
 }
