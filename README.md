@@ -67,6 +67,6 @@ This is a hardhat project.
   ```npm install```
 3. launch a hardhat local node
   ```npx hardhat node```
-4. clone and launch the [API](http://github.com)
+4. clone and launch the [API](https://github.com/Nefture/NefturiansAPI)
 5. launch tests
   ```yarn test```
