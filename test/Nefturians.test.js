@@ -253,7 +253,7 @@ describe('Nefturians basic features', () => {
     counter++;
   });
 
-  it('Can mint one more in presale and dont get ticket on mint', async () => {
+  it('Can mint one more in presale and dont get egg on mint', async () => {
     const balanceDiff = await runAndGetBalance(NefturiansAdmin.address, async () => {
       await expect(await NefturiansArtifactsAdmin.balanceOf(clientA.address, 0)).to.be.equal(0);
 
@@ -685,10 +685,10 @@ describe('Artifacts', () => {
     const transferEvent = receipt.events.find(e => e.event === 'Transfer');
     const { tokenId } = transferEvent.args;
     await expect(await NefturiansClientA.ownerOf(tokenId)).to.equal(clientA.address);
-    const nbTicketsClientA = await ArtifactsClientA.balanceOf(clientA.address, 0);
-    const nbTicketsClientB = await ArtifactsClientB.balanceOf(clientB.address, 0);
-    await expect(nbTicketsClientA).to.be.equal(0);
-    await expect(nbTicketsClientB).to.be.equal(0);
+    const nbEggsClientA = await ArtifactsClientA.balanceOf(clientA.address, 0);
+    const nbEggsClientB = await ArtifactsClientB.balanceOf(clientB.address, 0);
+    await expect(nbEggsClientA).to.be.equal(0);
+    await expect(nbEggsClientB).to.be.equal(0);
 
     await NefturiansClientB.setApprovalForAll(deployer.address, true);
     await NefturiansClientA.setApprovalForAll(deployer.address, true);

@@ -188,16 +188,16 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
   }
 
   /**
-   * Allows the parent contract (owner) to mint tickets to address
+   * Allows the parent contract (owner) to mint eggs to address
    * @param to: address of the token recipient
    */
-  function giveTickets(address to) override external onlyOwner {
+  function giveEgg(address to) override external onlyOwner {
     _mint(to, 0, 1, "");
   }
 
   /**
-   * Claim artifacts with a ticket for a user. One ticket gives one random artifact of a random rarity level
-   * @param quantity: quantity of tickets to use
+   * Claim artifacts with a egg for a user. One egg gives one random artifact of a random rarity level
+   * @param quantity: quantity of eggs to use
    * @param userSeed: random seed from the user
    * @param serverSeed: random seed from the server
    * @param signature: the user seed signed with the token owner's private key
@@ -230,7 +230,7 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
   }
 
   /**
-   * mint reward based on odds and ticket number
+   * mint reward based on odds and egg number
    * @param rewardee: address of receiver
    * @param ticket: random number
    *

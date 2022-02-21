@@ -384,7 +384,7 @@ contract Nefturians is ERC721A, AccessControl, Pausable, INefturians {
     address to
   ) internal override {
     if (from != address(0) && to != address(0)) {
-      nefturiansArtifacts.giveTickets(to);
+      nefturiansArtifacts.giveEgg(to);
     }
   }
 }
