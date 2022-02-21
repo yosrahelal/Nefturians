@@ -20,8 +20,8 @@ module.exports = {
 
   'You dont have required role': 'AC0',
   'AccessControl: can only renounce roles for self': 'AC1',
-  
-  'Array length do not match': 'ND0',
+
+  'Array lengths do not match': 'ND0',
   'Unauthorized to add key': 'ND1',
   'Not authorized to update metadata': 'ND2',
 
@@ -46,7 +46,6 @@ module.exports = {
   'Division by zero': 'NA02',
   'Wrong format for array': 'NA03',
   'Not enough artifacts': 'NA04',
-  'Array length do not match': 'NA05',
   'Item not consummable': 'NA06',
   'Rarity out of bounds': 'NA07',
   'Balance too low': 'NA08'

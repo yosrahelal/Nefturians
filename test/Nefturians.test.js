@@ -13,78 +13,6 @@ async function runAndGetBalance(address, callback) {
   return finalBalance.sub(previousBalance);
 }
 
-describe('Clear batch for whitelist soldout', () => {
-  let NefturiansAdmin;
-  let NefturiansClientC;
-  let NefturiansDeployer;
-
-  let signers;
-  let deployer;
-  let http;
-  let clientC;
-  let price;
-
-  before(async () => {
-    signers = await ethers.getSigners();
-
-    deployer = signers[0];
-    clientC = signers[4];
-
-    const {
-      nefturians,
-    } = await deployNefturians();
-    NefturiansAdmin = nefturians;
-    price = await NefturiansAdmin.getMintingPrice();
-
-    NefturiansClientC = NefturiansAdmin.connect(clientC);
-
-    NefturiansDeployer = NefturiansAdmin.connect(deployer);
-
-    http = axios.create({
-      baseURL: process.env.API_URL
-    });
-
-    let response = await http.post('/contract', {
-      address: NefturiansDeployer.address
-    }).catch(e => console.log(`POST /contract: ${e.message}`));
-    await expect(response.data.address).to.equal(NefturiansDeployer.address);
-    await NefturiansAdmin.setPresaleStart(Math.floor(Date.now() / 1000));
-    response = await http.get('/whitelist/root');
-    await NefturiansDeployer.setMerkleRoot(response.data.root);
-  });
-
-  it('Can sold out whitelist sale'); // not working cause supply is 8001
-
-  // it('Can sold out whitelist sale', async () => {
-  //   const whitelistSaleSupply = 30;
-  //   const tokensReserved = 3;
-
-  //   let client;
-  //   let NefturiansClient;
-  //   let response;
-  //   let merkleProof;
-  //   const whitelistedSigners = signers.filter((signer, index) => index !== 2);
-
-  //   for (let index = 0; index < whitelistSaleSupply - tokensReserved; index++) {
-  //     client = whitelistedSigners[index % whitelistedSigners.length];
-  //     NefturiansClient = NefturiansAdmin.connect(client);
-
-  //     response = await http.post('/whitelist', { address: client.address });
-  //     merkleProof = response.data.merkleProof;
-  //     await NefturiansClient.whitelistMint(1, merkleProof, {
-  //       value: price
-  //     });
-  //   }
-  //   response = await http.post('/whitelist', { address: clientC.address });
-  //   merkleProof = response.data.merkleProof;
-
-  //   await expect(NefturiansClientC.whitelistMint(1, merkleProof, {
-  //     value: price
-  //   })).to.be.revertedWith(errorMessages['Reached max whitelist supply']);
-  //   await expect((await NefturiansClientC.totalSupply()).toNumber()).to.be.equal(whitelistSaleSupply - tokensReserved);
-  // });
-});
-
 describe('Nefturians basic features', () => {
   let NefturiansAdmin;
   let NefturiansClientA;
@@ -219,12 +147,12 @@ describe('Nefturians basic features', () => {
   });
 
   it('Can set baseURI', async () => {
-    await NefturiansAdmin.setBaseURI("https://api.nefturians.io/");
+    await NefturiansAdmin.setBaseURI('https://api.nefturians.io/');
 
-    expect(await NefturiansAdmin.tokenURI(0)).to.be.equal("https://api.nefturians.io/0");
-    expect(await NefturiansAdmin.tokenURI(1)).to.be.equal("https://api.nefturians.io/1");
+    expect(await NefturiansAdmin.tokenURI(0)).to.be.equal('https://api.nefturians.io/0');
+    expect(await NefturiansAdmin.tokenURI(1)).to.be.equal('https://api.nefturians.io/1');
 
-    expect(await NefturiansAdmin.getTokenURI)
+    expect(await NefturiansAdmin.getTokenURI);
   });
 
   it('Cant mint yet', async () => {
@@ -685,7 +613,6 @@ describe('New batch for more tests', () => {
 });
 
 describe('Artifacts', () => {
-
   let NefturiansAdmin;
   let NefturiansClientA;
   let NefturiansClientB;
@@ -775,7 +702,6 @@ describe('Artifacts', () => {
 
     await expect(await ArtifactsClientA.balanceOf(clientA.address, tokenId)).to.be.equal(12);
     await expect(await ArtifactsClientB.balanceOf(clientB.address, tokenId)).to.be.equal(13);
-
   });
 
   it('Cant claim artifact if no artifacts created', async () => {
@@ -1095,11 +1021,11 @@ describe('Artifacts', () => {
   });
 
   it('Cant mint batch when not minter role', async () => {
-    await expect(ArtifactsClientA.mintBatch(clientA.address, [0, 1, 2, 3], [2, 5, 4, 1], 0)).to.be.revertedWith(errorMessages["You dont have required role"]);
+    await expect(ArtifactsClientA.mintBatch(clientA.address, [0, 1, 2, 3], [2, 5, 4, 1], 0)).to.be.revertedWith(errorMessages['You dont have required role']);
   });
 
-  it('Can mint batch when minter role', async() => {
-    var initialBalances = [];
+  it('Can mint batch when minter role', async () => {
+    const initialBalances = [];
 
     const tokenIds = [0, 1, 2, 3];
     const tokenCounts = [2, 5, 4, 1];
@@ -1121,8 +1047,6 @@ describe('Artifacts', () => {
   });
 
   it('Cant mint with signature if signature is incorrect', async () => {
-    const initialBalance = await ArtifactsClientA.balanceOf(clientA.address, 0);
-
     const response = await http.post('/signArtifact', { address: clientB.address, tokenId: 0, quantity: 3 });
     const signed = response.data.signature;
 
@@ -1147,7 +1071,7 @@ describe('Artifacts', () => {
     await expect(parseInt(from, 16)).to.equal(0);
     await expect(to).to.equal(clientA.address);
     await expect(id).to.equal(0);
-    await expect(value).to.equal(3)
+    await expect(value).to.equal(3);
 
     await expect(await ArtifactsClientA.balanceOf(clientA.address, 0) - initialBalance).to.equal(3);
   });
@@ -1189,8 +1113,8 @@ describe('Artifacts', () => {
       newOdds
     } = event.args;
 
-    supposedOldOdds = [70000, 90000, 99000, 100000];
-    supposedNewOdds = [75000, 86000, 99000, 100000];
+    const supposedOldOdds = [70000, 90000, 99000, 100000];
+    const supposedNewOdds = [75000, 86000, 99000, 100000];
 
     for (let index = 0; index < oldOdds.length; index++) {
       expect(oldOdds[index]).to.equal(supposedOldOdds[index]);
@@ -1283,10 +1207,10 @@ describe('Artifacts', () => {
   // });
 
   it('Can set URI', async () => {
-    await NefturiansArtifactsAdmin.setURI(0, "https://api.nefturians.io/artifacts/0");
-    await NefturiansArtifactsAdmin.setURI(1, "https://api.nefturians.io/artifacts/1");
+    await NefturiansArtifactsAdmin.setURI(0, 'https://api.nefturians.io/artifacts/0');
+    await NefturiansArtifactsAdmin.setURI(1, 'https://api.nefturians.io/artifacts/1');
 
-    expect(await ArtifactsClientA.uri(0)).to.equal("https://api.nefturians.io/artifacts/0");
+    expect(await ArtifactsClientA.uri(0)).to.equal('https://api.nefturians.io/artifacts/0');
   });
 
   // #########
