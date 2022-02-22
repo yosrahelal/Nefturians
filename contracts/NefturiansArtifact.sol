@@ -219,7 +219,6 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     require(balanceOf(caller, 0) >= quantity, "NA00");
     require(stakes[caller] >= tx.gasprice, "NA01");
     _burn(caller, 0, quantity);
-    uint256[] memory numbers = new uint256[](quantity);
     for (uint256 i = 0; i < quantity; i++) {
       uint256 number = uint256(keccak256(abi.encodePacked(userSeed, serverSeed, i)));
       distributeReward(caller, number);
@@ -254,6 +253,7 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
       rarity = 3;
     }
 
+    require(countByRarity[rarity] > 0, "NA02");
     uint256 index = ticket % countByRarity[rarity];
     _mint(rewardee, indexesByRarity[rarity][index], 1, "");
   }
