@@ -224,7 +224,6 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
       distributeReward(caller, number);
     }
     stakes[caller] -= tx.gasprice;
-    require(address(this).balance > tx.gasprice, "NA08");
     payable(msg.sender).transfer(tx.gasprice);
   }
 
