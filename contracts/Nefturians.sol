@@ -158,10 +158,13 @@ contract Nefturians is ERC721A, AccessControl, Pausable, INefturians {
   /**
    * Update NefturiansArtifact contract
    * @param newNefturiansArtifact: address of new NefturiansArtifact contract
-   *
    */
   function setNefturiansArtifact(address newNefturiansArtifact) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    _revokeRole(METADATA_ROLE, address(nefturiansArtifacts));
+    _revokeRole(ARTIFACT_CONTRACT_ROLE, address(nefturiansArtifacts));
     nefturiansArtifacts = INefturianArtifact(newNefturiansArtifact);
+    _grantRole(METADATA_ROLE, address(nefturiansArtifacts));
+    _grantRole(ARTIFACT_CONTRACT_ROLE, address(nefturiansArtifacts));
   }
 
   /**
