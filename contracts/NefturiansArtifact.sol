@@ -11,44 +11,76 @@ import "../interfaces/INefturians.sol";
 
 contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, INefturianArtifact {
 
+  /**
+   * Roles for the access control
+   * these roles are only checked against the parent contract's settings
+   */
   bytes32 internal constant DAO_ROLE = keccak256("DAO_ROLE");
   bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
   bytes32 internal constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
   bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
 
+  /**
+   * Custom URI for each token
+   */
   mapping(uint256 => string) private _uris;
-  INefturians internal nefturians;
 
-  // common => 0
-  // power => 1
-  // rare => 2
-  // legendary => 3
+  /**
+   * Odds of drawing artifacts based on their rarity level.
+   *
+   * Rarity levels go in this order:
+   *  - odds[0] = common (for common equipment and basic consumables)
+   *  - odds[1] = powerUp (consummables used to upgrades Nefturians stats)
+   *  - odds[2] = rare (for rare equipment and powerful buffs consumables)
+   *  - odds[3] = legendary (wait for it...)
+   */
   uint256[] private odds = [70000, 90000, 99000, 100000];
 
-  // current maximum index
+  /**
+   * Current tokenId count.
+   * Starts at 1 because index 0 is reserved for eggs
+   */
   uint256 private generalCount = 1;
 
-  mapping(uint256 => mapping(uint256 => uint256)) private indexesByRarity;
-  mapping(uint256 => uint256) private countByRarity;
-  mapping(uint256 => bool) private consumable;
+  /**
+   * Mapping Rarity + index from rarity to tokenIds.
+   *
+   * indexesByRarity[ rarityId ][ autoincremented index ] => tokenId
+   * countByRarity = autoincremented indexes for each rarity level
+   */
+  mapping(uint256 => mapping(uint256 => uint256)) indexesByRarity;
+  mapping(uint256 => uint256) countByRarity;
 
+  /**
+   * If token should be burned or equipped when used
+   */
+  mapping(uint256 => bool) consumable;
+
+  /**
+   * Ether pool to pay for the gas when a method needs to be called by our API
+   */
   mapping(address => uint256) public stakes;
+
+  /**
+   * Parent contract: The ERC721N collection
+   */
+  INefturians internal nefturians;
 
   constructor() ERC1155("") {
     nefturians = INefturians(msg.sender);
-    consumable[0] = true; // autre utilite pour les eggs ?
+    consumable[0] = true;
   }
 
   /**
-   * updates odds for Artifacts
+   * Updated the odds of drawing artifacts based on their rarity level
    * @param newOdds: new odds in increment order with last equal to 100000
    *
    * Error messages:
    *  - AC0: "You dont have required role"
    *  - NA03: "Wrong format for array"
    */
-  function updateOdds(uint256[] calldata newOdds) 
-  public 
+  function updateOdds(uint256[] calldata newOdds)
+  public
   {
     require(nefturians.hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "AC0");
     require(newOdds.length == 4, "NA03");
@@ -62,15 +94,15 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
   }
 
   /**
-   * adds new artifact
-   * @param rarity: rarity of the new artifact between 
+   * Adds a new artifact
+   * @param rarity: rarity of the new artifact (must be between 0 and 3)
    * @param quantity: quantity of artifacts to be added
-   * @param isConsumable: are the artifacts consumable ? 
+   * @param isConsumable: if the artifact can be consumed
    *
    * Error messages:
    *  - NA07: "Rarity out of bounds"
    */
-  function addRareItem(uint256 rarity, uint256 quantity, bool isConsumable) 
+  function addRareItem(uint256 rarity, uint256 quantity, bool isConsumable)
   public
   {
     require(rarity < 4 && rarity >= 0, "NA07");
@@ -95,15 +127,17 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     _setURI(tokenId, newuri);
   }
 
-  /** 
-   * mint token but only if signature from SIGNER_ROLE is provided
+  /**
+   * Public mint function that requires a signature from a SIGNER_ROLE
    * @param tokenId: id of the token
    * @param quantity: quantity to be minted
    * @param signature: signature of SIGNER_ROLE
    *
+   * Error messages:
+   *  - N6: "This operation has not been signed"
    */
-  function mintWithSignature(uint256 tokenId, uint256 quantity, bytes calldata signature) 
-  public 
+  function mintWithSignature(uint256 tokenId, uint256 quantity, bytes calldata signature)
+  public
   {
     uint256 nonce = nefturians.getNonce(msg.sender);
     require(nefturians.hasRole(SIGNER_ROLE, ECDSALibrary.recover(abi.encodePacked(msg.sender, nonce, tokenId, quantity), signature)), "N6");
@@ -111,8 +145,8 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     _mint(msg.sender, tokenId, quantity, "");
   }
 
-  /** 
-   * mint batch of token only if MINTER_ROLE
+  /**
+   * Mint batch of token only if MINTER_ROLE
    * @param to: address reveiving tokens
    * @param tokenIds: ids of the tokens to be minted
    * @param amounts: quantities of each token to be minted
@@ -128,24 +162,23 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     _mintBatch(to, tokenIds, amounts, data);
   }
 
-  /** 
-   * get uri of tokenId
+  /**
+   * Get the uri of a tokenId
    * @param tokenId: id of the token
-   *
    */
   function uri(uint256 tokenId) public view virtual override returns (string memory) {
     return _uris[tokenId];
   }
 
-  /**   
-   * allows user to stake eth and allow admin to claim artifacts for him
+  /**
+   * Stake some eth to allow the admin to claim artifacts for you
    */
   function stake() public payable {
     stakes[msg.sender] += msg.value;
   }
 
-  /**   
-   * allows user to recover his staked funds
+  /**
+   * Get your staked eth back
    */
   function unstake() public {
     require(stakes[msg.sender] > 0, "No stake");
@@ -154,29 +187,20 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     payable(msg.sender).transfer(staked);
   }
 
-  /**   
-   * allows an owner contract to mint tickets to address
-   * @param ticketAddress: address reveiving token
+  /**
+   * Allows the parent contract (owner) to mint eggs to address
+   * @param to: address of the token recipient
    */
-  function giveTickets(address ticketAddress) override external onlyOwner {
-    _mint(ticketAddress, 0, 1, "");
+  function giveEgg(address to) override external onlyOwner {
+    _mint(to, 0, 1, "");
   }
 
-  /**   
-   * internal function to set URI of token
-   * @param tokenId: id of the token
-   * @param newuri: new uri of token id
-   */
-  function _setURI(uint256 tokenId, string memory newuri) internal {
-    _uris[tokenId] = newuri;
-  }
-
-  /**   
-   * function to claim an artifact with a ticket. One ticket gives one random artifact of verying rarity
-   * @param quantity: quantity of tickets to use
-   * @param userSeed: random seed from user
-   * @param serverSeed: random seed from server
-   * @param signature: signature of the token owner
+  /**
+   * Claim artifacts with a egg for a user. One egg gives one random artifact of a random rarity level
+   * @param quantity: quantity of eggs to use
+   * @param userSeed: random seed from the user
+   * @param serverSeed: random seed from the server
+   * @param signature: the user seed signed with the token owner's private key
    *
    * Error messages:
    *  - AC0: "You dont have required role"
@@ -204,8 +228,8 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     payable(msg.sender).transfer(tx.gasprice);
   }
 
-  /**   
-   * mint reward based on odds and ticket number
+  /**
+   * mint reward based on odds and egg number
    * @param rewardee: address of receiver
    * @param ticket: random number
    *
@@ -214,34 +238,28 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
    */
   function distributeReward(address rewardee, uint256 ticket) internal {
     uint256 number = ticket % 100000;
-    uint256 index;
     uint256 rarity;
 
     if (number < odds[0]) {
-      require(countByRarity[0] != 0, "NA02");
-      index = ticket % countByRarity[0];
       rarity = 0;
     }
     else if (number < odds[1]) {
-      require(countByRarity[1] != 0, "NA02");
-      index = ticket % countByRarity[1];
       rarity = 1;
     }
     else if (number < odds[2]) {
-      require(countByRarity[2] != 0, "NA02");
-      index = ticket % countByRarity[2];
       rarity = 2;
     }
     else {
-      require(countByRarity[3] != 0, "NA02");
-      index = ticket % countByRarity[3];
       rarity = 3;
     }
+
+    require(countByRarity[rarity] > 0, "NA02");
+    uint256 index = ticket % countByRarity[rarity];
     _mint(rewardee, indexesByRarity[rarity][index], 1, "");
   }
 
-  /**   
-   * allow owner of consumable tokens to use them
+  /**
+   * Allow an owner of consumable tokens to use them
    * @param tokenId: id of the token to be used
    * @param quantity: quantity to be used
    *
@@ -256,6 +274,17 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
     emit UseArtifact(tokenId, quantity);
   }
 
+  function _setURI(uint256 tokenId, string memory newuri) internal {
+    _uris[tokenId] = newuri;
+  }
+
+  function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+  internal
+  override(ERC1155, ERC1155Supply)
+  {
+    super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+  }
+
   // The following functions are overrides required by Solidity.
   function supportsInterface(bytes4 interfaceId)
   public
@@ -264,12 +293,5 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
   returns (bool)
   {
     return super.supportsInterface(interfaceId);
-  }
-
-  function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
-  internal
-  override(ERC1155, ERC1155Supply)
-  {
-    super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
   }
 }

@@ -155,7 +155,7 @@ contract Nefturians is ERC721A, AccessControl, Pausable, INefturians {
     shares[0xa0Ee7A142d267C1f36714E4a8F75612F20a79720] = 10;
   }
 
-  /** 
+  /**
    * Update NefturiansArtifact contract
    * @param newNefturiansArtifact: address of new NefturiansArtifact contract
    *
@@ -259,7 +259,7 @@ contract Nefturians is ERC721A, AccessControl, Pausable, INefturians {
   }
 
   /**
-   * Public mint function with requirement for signature from a SIGNER_ROLE
+   * Public mint function that requires a signature from a SIGNER_ROLE
    * @param quantity: number of tokens to mint
    * @param signature: signature from a wallet with SIGNER_ROLE to authorize the mint
    *
@@ -384,7 +384,7 @@ contract Nefturians is ERC721A, AccessControl, Pausable, INefturians {
     address to
   ) internal override {
     if (from != address(0) && to != address(0)) {
-      nefturiansArtifacts.giveTickets(to);
+      nefturiansArtifacts.giveEgg(to);
     }
   }
 }
