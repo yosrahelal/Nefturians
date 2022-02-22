@@ -4,13 +4,13 @@
     "compile": "hardhat compile",
     "lint": "eslint . --fix",
     "deploy": "hardhat run scripts/deploy.js",
-    "deploy:local": "hardhat run --network localhost scripts/deploy.js",
-    "test": "hardhat test --network localhost",
-    "test:mint": "hardhat run --network localhost scripts/mint.js"
+    "test": "hardhat test",
+    "deploy:localhost": "hardhat run --network localhost scripts/deploy.js",
+    "test:localhost": "hardhat test --network localhost"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.4",
-    "@nomiclabs/hardhat-etherscan": "^2.1.8",
+    "@nomiclabs/hardhat-etherscan": "^3.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts": "^4.4.1",
     "chai": "^4.3.4",
