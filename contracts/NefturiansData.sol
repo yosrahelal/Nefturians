@@ -5,9 +5,8 @@ import "../libraries/ECDSALibrary.sol";
 import "../libraries/StringsLibrary.sol";
 import "../interfaces/INefturiansData.sol";
 import "../interfaces/INefturians.sol";
-import "./AccessControl.sol";
 
-contract NefturiansData is AccessControl, INefturiansData {
+contract NefturiansData is INefturiansData {
 
   bytes32 internal constant DAO_ROLE = keccak256("DAO_ROLE");
   bytes32 internal constant METADATA_ROLE = keccak256("METADATA_ROLE");
@@ -21,7 +20,6 @@ contract NefturiansData is AccessControl, INefturiansData {
   INefturians collection;
 
   constructor() {
-    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     metadataKeys[0] = "name";
     metadataKeys[1] = "strength";
     metadataKeysCounter = 2;
