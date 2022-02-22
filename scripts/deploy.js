@@ -1,18 +1,15 @@
-const {
-  deployNefturians
-} = require('../deploy/index.js');
+const deployNefturians = require('../deploy/index.js');
 
 async function main() {
-  const nefturians = await deployNefturians(process.env.NEFTURIANS_ADDRESS);
-  if (!process.env.NEFTURIANS_ADDRESS) {
-    console.log('Deployed Nefturians.');
-    console.log('To avoid redeploying it, add the following to your `.env`:');
-    console.log(`\nNEFTURIANS_ADDRESS=${nefturians.address}\n`);
-  }
-
-  console.log({
-    nefturians: nefturians.address
-  });
+  const {
+    nefturians,
+    artifacts,
+    data
+  } = await deployNefturians();
+  console.log('Deployed Nefturians.\n\n');
+  console.log(`NEFTURIANS_ADDRESS=${nefturians.address}\n`);
+  console.log(`ARTIFACTS_ADDRESS=${artifacts.address}\n`);
+  console.log(`METADATA_ADDRESS=${data.address}\n`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

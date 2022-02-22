@@ -1,8 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const {
-  deployNefturians
-} = require('../deploy/index.js');
+const deployNefturians = require('../deploy/index.js');
 const axios = require('axios');
 const errorMessages = require('../doc/errors');
 
