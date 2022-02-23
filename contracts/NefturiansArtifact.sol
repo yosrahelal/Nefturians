@@ -48,13 +48,13 @@ contract NefturiansArtifact is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply,
    * indexesByRarity[ rarityId ][ autoincremented index ] => tokenId
    * countByRarity = autoincremented indexes for each rarity level
    */
-  mapping(uint256 => mapping(uint256 => uint256)) indexesByRarity;
-  mapping(uint256 => uint256) countByRarity;
+  mapping(uint256 => mapping(uint256 => uint256)) private indexesByRarity;
+  mapping(uint256 => uint256) private countByRarity;
 
   /**
    * If token should be burned or equipped when used
    */
-  mapping(uint256 => bool) consumable;
+  mapping(uint256 => bool) private consumable;
 
   /**
    * Ether pool to pay for the gas when a method needs to be called by our API

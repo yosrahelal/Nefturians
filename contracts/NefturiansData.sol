@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/ECDSALibrary.sol";
 import "../libraries/StringsLibrary.sol";
 import "../interfaces/INefturiansData.sol";
 import "../interfaces/INefturians.sol";
 
-contract NefturiansData is INefturiansData {
+contract NefturiansData is Ownable, INefturiansData {
 
   bytes32 internal constant DAO_ROLE = keccak256("DAO_ROLE");
   bytes32 internal constant METADATA_ROLE = keccak256("METADATA_ROLE");
@@ -17,7 +18,7 @@ contract NefturiansData is INefturiansData {
   mapping(uint256 => mapping(uint256 => uint256)) internal attributes;
   mapping(uint256 => mapping(uint256 => string)) internal metadata;
 
-  INefturians collection;
+  INefturians private collection;
 
   constructor() {
     metadataKeys[0] = "name";
@@ -50,8 +51,7 @@ contract NefturiansData is INefturiansData {
    * Error messages:
    *  - ND1: "Unauthorized to add key"
    */
-  function addKey(string calldata keyName) public {
-    require(collection.hasRole(METADATA_ROLE, msg.sender), "ND1");
+  function addKey(string calldata keyName) public onlyOwner {
     metadataKeys[metadataKeysCounter + 1] = keyName;
     metadataKeysCounter += 1;
   }
